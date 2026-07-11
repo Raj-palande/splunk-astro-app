@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "start": "astro start --host 0.0.0.0 --port $PORT",
     "preview": "astro preview",
     "astro": "astro"
   },
