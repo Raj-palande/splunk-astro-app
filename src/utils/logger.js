@@ -25,7 +25,7 @@ export async function logSecurityEvent(category, eventType, details, request) {
     const SPLUNK_TUNNEL_URL = "https://gorgeous-implement-scrambled.ngrok-free.dev/services/collector/event";
     
     // Paste your exact Token Value from Splunk Web inside these quotes!
-    const SPLUNK_HEC_TOKEN = "YOUR_SPLUNK_HEC_TOKEN_HERE";
+    const SPLUNK_HEC_TOKEN = "cd08c018-1d0b-41bc-a070-b1a89d7f59b0";
 
     // Fire the network request asynchronously so it doesn't slow down the frontend UI
     fetch(SPLUNK_TUNNEL_URL, {
