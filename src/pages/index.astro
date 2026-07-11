@@ -1,17 +1,117 @@
 ---
+// src/pages/index.astro
+import { logSecurityEvent } from '../utils/logger';
 
+let message = "";
+let messageClass = "";
+
+// Intercept form submissions right on the server
+if (Astro.request.method === 'POST') {
+  try {
+    const data = await Astro.request.formData();
+    const username = data.get('username')?.toString() || '';
+    const password = data.get('password')?.toString() || '';
+
+    // Check credentials
+    if (username === "admin" && password === "SuperSecret123!") {
+      message = "Success! Access Granted.";
+      messageClass = "success";
+      
+      // 🟢 Log a successful authentication event
+      logSecurityEvent('auth', 'login_success', { username }, Astro.request);
+    } else {
+      message = "Invalid credentials. Incident has been logged.";
+      messageClass = "error";
+
+      // 🔴 Concept 1 Tracker: Log the failed authentication event
+      logSecurityEvent('auth', 'login_failure', { 
+        username, 
+        attempted_password: password // In production, never log real passwords, but great for our threat simulation!
+      }, Astro.request);
+    }
+  } catch (error) {
+    // 🟡 Concept 4 Tracker: Log system execution errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logSecurityEvent('system', 'server_error', { status_code: 500, error_msg: errorMessage }, Astro.request);
+    message = "Internal Server Error occurred.";
+    messageClass = "error";
+  }
+}
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Enterprise Secure Portal</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #0f172a;
+        color: #f8fafc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .login-card {
+        background-color: #1e293b;
+        padding: 2.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        width: 100%;
+        max-width: 400px;
+        border: 1px solid #334155;
+      }
+      h2 { margin-top: 0; color: #38bdf8; text-align: center; }
+      label { display: block; margin: 1rem 0 0.5rem; color: #94a3b8; font-size: 0.9rem; }
+      input {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 4px;
+        border: 1px solid #475569;
+        background-color: #0f172a;
+        color: #fff;
+        box-sizing: border-box;
+      }
+      button {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: #0284c7;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 1.5rem;
+      }
+      button:hover { background-color: #0369a1; }
+      .alert {
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+      .error { background-color: #991b1b; color: #fca5a5; border: 1px solid #7f1d1d; }
+      .success { background-color: #166534; color: #86efac; border: 1px solid #14532d; }
+    </style>
+  </head>
+  <body>
+    <div class="login-card">
+      <h2>SOC Command Portal</h2>
+      
+      {message && <div class={`alert ${messageClass}`}>{message}</div>}
+      
+      <form method="POST">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autocomplete="off"/>
+        
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+        
+        <button type="submit">Sign In</button>
+      </form>
+    </div>
+  </body>
 </html>

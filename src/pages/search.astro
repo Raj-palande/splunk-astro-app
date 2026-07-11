@@ -1,0 +1,98 @@
+---
+// src/pages/search.astro
+import { logSecurityEvent } from '../utils/logger.js';
+
+const url = new URL(Astro.request.url);
+const searchQuery = url.searchParams.get('q') || '';
+
+let results: string[] = [];
+let detectionMessage = "";
+let isAttack = false;
+
+// Mock database index records
+const mockDatabase = ["system_config.cfg", "employee_payroll_2026.csv", "network_topology.png", "readme.md"];
+
+if (searchQuery) {
+  const lowercaseQuery = searchQuery.toLowerCase();
+
+  // 🔴 Concept 2 Tracker: Capture SQL Injection Payloads (OWASP Top 10)
+  if (lowercaseQuery.includes("' or '1'='1") || lowercaseQuery.includes("union select") || lowercaseQuery.includes("drop table")) {
+    isAttack = true;
+    detectionMessage = "CRITICAL DETECT: SQL Injection pattern matched. Event shipped to SIEM.";
+    
+    logSecurityEvent('security', 'owasp_sqli_detected', {
+      input_payload: searchQuery,
+      threat_severity: "HIGH"
+    }, Astro.request);
+    
+  } else {
+    // Process a normal search query safely
+    results = mockDatabase.filter(item => item.toLowerCase().includes(lowercaseQuery));
+    
+    // 🟡 Concept 3 Tracker: Calculate Outbound Data Exfiltration Payload Size
+    const responsePayloadSize = Buffer.byteLength(JSON.stringify(results));
+    
+    logSecurityEvent('data', 'data_transfer', {
+      search_term: searchQuery,
+      records_returned: results.length,
+      bytes_sent: responsePayloadSize
+    }, Astro.request);
+  }
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Enterprise Database Search</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #0f172a;
+        color: #f8fafc;
+        padding: 2rem;
+      }
+      .container { max-width: 600px; margin: 0 auto; background-color: #1e293b; padding: 2rem; border-radius: 8px; border: 1px solid #334155; }
+      h2 { color: #38bdf8; margin-top: 0; }
+      input[type="text"] {
+        width: 75%; padding: 0.75rem; border-radius: 4px; border: 1px solid #475569; background-color: #0f172a; color: #fff;
+      }
+      button {
+        padding: 0.75rem 1.5rem; background-color: #0284c7; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
+      }
+      button:hover { background-color: #0369a1; }
+      .alert { padding: 0.75rem; border-radius: 4px; margin: 1rem 0; font-size: 0.9rem; }
+      .danger { background-color: #991b1b; color: #fca5a5; border: 1px solid #7f1d1d; }
+      ul { list-style-type: none; padding: 0; }
+      li { background-color: #334155; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 4px; }
+      a { color: #38bdf8; text-decoration: none; font-size: 0.9rem; display: inline-block; margin-bottom: 1rem; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a href="/">⬅️ Back to Login Portal</a>
+      <h2>Enterprise Document Repository</h2>
+      <p style="color: #94a3b8; font-size: 0.9rem;">Search backend records index dynamically monitored by Splunk.</p>
+      
+      <form method="GET">
+        <input type="text" name="q" value={searchQuery} placeholder="Search files (e.g., config, csv)..." required autocomplete="off"/>
+        <button type="submit">Query</button>
+      </form>
+
+      {detectionMessage && <div class="alert danger">{detectionMessage}</div>}
+
+      {results.length > 0 && (
+        <div>
+          <h3>Query Results:</h3>
+          <ul>
+            {results.map(item => <li>📄 {item}</li>)}
+          </ul>
+        </div>
+      )}
+      
+      {searchQuery && results.length === 0 && !isAttack && (
+        <p style="color: #94a3b8;">No matching files found. Data telemetry entry sent.</p>
+      )}
+    </div>
+  </body>
+</html>
