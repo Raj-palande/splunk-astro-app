@@ -12,25 +12,39 @@ if (Astro.request.method === 'POST') {
     const username = data.get('username')?.toString() || '';
     const password = data.get('password')?.toString() || '';
 
-    // Check credentials
-    if (username === "admin" && password === "SuperSecret123!") {
+    // 🛡️ SECURITY DETECTION LAYER: Check for common SQL Injection signatures
+    const sqliRegex = /('|--|\b(OR|AND)\b\s+\d+=\d+|\bUNION\b|\bSELECT\b|\bDROP\b|\bINSERT\b)/i;
+
+    if (sqliRegex.test(username) || sqliRegex.test(password)) {
+      message = "Malicious activity blocked. Security operations have been notified.";
+      messageClass = "error";
+
+      // 🔴 Flag this instantly as a high-severity SQL Injection attempt!
+      await logSecurityEvent('security', 'sqli_detect', { 
+        username, 
+        attempted_password: password,
+        risk_level: "HIGH",
+        matched_signature: "Regex.SQLi.GenericPattern"
+      }, Astro.request);
+
+    } else if (username === "admin" && password === "SuperSecret123!") {
       message = "Success! Access Granted.";
       messageClass = "success";
       
-      // 🟢 Log a successful authentication event (ADDED AWAIT)
+      // 🟢 Log a successful authentication event
       await logSecurityEvent('auth', 'login_success', { username }, Astro.request);
     } else {
       message = "Invalid credentials. Incident has been logged.";
       messageClass = "error";
 
-      // 🔴 Concept 1 Tracker: Log the failed authentication event (ADDED AWAIT)
+      // 🔴 Concept 1 Tracker: Log the standard failed authentication event
       await logSecurityEvent('auth', 'login_failure', { 
         username, 
-        attempted_password: password // In production, never log real passwords, but great for our threat simulation!
+        attempted_password: password 
       }, Astro.request);
     }
   } catch (error) {
-    // 🟡 Concept 4 Tracker: Log system execution errors (ADDED AWAIT)
+    // 🟡 Concept 4 Tracker: Log system execution errors
     const errorMessage = error instanceof Error ? error.message : String(error);
     await logSecurityEvent('system', 'server_error', { status_code: 500, error_msg: errorMessage }, Astro.request);
     message = "Internal Server Error occurred.";
