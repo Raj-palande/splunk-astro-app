@@ -27,8 +27,8 @@ export async function logSecurityEvent(category, eventType, details, request) {
     // Paste your exact Token Value from Splunk Web inside these quotes!
     const SPLUNK_HEC_TOKEN = "cd08c018-1d0b-41bc-a070-b1a89d7f59b0";
 
-    // Fire the network request asynchronously so it doesn't slow down the frontend UI
-    fetch(SPLUNK_TUNNEL_URL, {
+    // CRITICAL FIX: Explicitly await the fetch and keep the connection active
+    await fetch(SPLUNK_TUNNEL_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Splunk ${SPLUNK_HEC_TOKEN}`,
@@ -37,8 +37,11 @@ export async function logSecurityEvent(category, eventType, details, request) {
       body: JSON.stringify({
         sourcetype: "_json",
         event: logEntry
-      })
-    }).catch(err => console.error("HEC Stream Error:", err));
+      }),
+      keepalive: true // Prevents localhost environment from closing the connection early
+    }).catch(err => {
+      console.error("👉 PIPELINE NETWORK ERROR:", err.message);
+    });
 
   } catch (error) {
     console.error("Failed to process security telemetry log:", error);

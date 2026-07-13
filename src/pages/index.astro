@@ -17,22 +17,22 @@ if (Astro.request.method === 'POST') {
       message = "Success! Access Granted.";
       messageClass = "success";
       
-      // 🟢 Log a successful authentication event
-      logSecurityEvent('auth', 'login_success', { username }, Astro.request);
+      // 🟢 Log a successful authentication event (ADDED AWAIT)
+      await logSecurityEvent('auth', 'login_success', { username }, Astro.request);
     } else {
       message = "Invalid credentials. Incident has been logged.";
       messageClass = "error";
 
-      // 🔴 Concept 1 Tracker: Log the failed authentication event
-      logSecurityEvent('auth', 'login_failure', { 
+      // 🔴 Concept 1 Tracker: Log the failed authentication event (ADDED AWAIT)
+      await logSecurityEvent('auth', 'login_failure', { 
         username, 
         attempted_password: password // In production, never log real passwords, but great for our threat simulation!
       }, Astro.request);
     }
   } catch (error) {
-    // 🟡 Concept 4 Tracker: Log system execution errors
+    // 🟡 Concept 4 Tracker: Log system execution errors (ADDED AWAIT)
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logSecurityEvent('system', 'server_error', { status_code: 500, error_msg: errorMessage }, Astro.request);
+    await logSecurityEvent('system', 'server_error', { status_code: 500, error_msg: errorMessage }, Astro.request);
     message = "Internal Server Error occurred.";
     messageClass = "error";
   }
