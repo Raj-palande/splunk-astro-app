@@ -22,6 +22,7 @@ export async function logSecurityEvent(category, eventType, details, request) {
     console.log(JSON.stringify(logEntry));
 
     // 3. Stream directly to your local Splunk via your active ngrok tunnel link
+    // 🔴 CHANGE THIS URL to match the new forwarding link inside your active Ngrok terminal window!
     const SPLUNK_TUNNEL_URL = "https://gorgeous-implement-scrambled.ngrok-free.dev/services/collector/event";
     
     // Paste your exact Token Value from Splunk Web inside these quotes!
